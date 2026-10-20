@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1c3461">
+<title>FLEX Essay Trainer</title>
+<style>
+  :root {
+    --navy: #1c3461;
+    --navy-dark: #12244a;
+    --panel-head: #cfdcef;
+    --panel-border: #8a9bb5;
+    --cell: #e9e9e9;
+    --highlight: #fff6a8;
+    --green: #6fb26f;
+    --red: #d42020;
+    --text: #222;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    background: #f2f3f5;
+    color: var(--text);
+    font-family: Arial, Helvetica, sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  .page {
+    max-width: 1000px;
+    margin: 24px auto;
+    padding: 24px 28px 28px;
+    background: #fff;
+    border: 1px solid #333;
+  }
+
+  /* ---------- Timed Section Progress ---------- */
+  .progress {
+    border: 1px solid var(--panel-border);
+  }
+  .progress-head {
+    background: var(--panel-head);
+    padding: 4px 6px;
+    font-size: 14px;
+    border-bottom: 1px solid var(--panel-border);
+  }
+  .progress-body {
+    display: grid;
+    grid-template-columns: 150px 1fr 150px;
+    gap: 6px;
+    padding: 4px;
+  }
+  .side .label {
+    background: var(--cell);
+    font-style: italic;
+    font-size: 13px;
+    padding: 4px 6px;
+  }
+  .side .value {
+    background: var(--highlight);
+    font-size: 13px;
+    padding: 3px 6px;
+    margin-top: 6px;
+    min-height: 20px;
+  }
+  .timer {
+    border: 1px solid var(--green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100px;
+    font-size: 22px;
+    font-variant-numeric: tabular-nums;
+    transition: color .2s, border-color .2s, background .2s;
+  }
+  .timer.warning { color: var(--red); border-color: var(--red); background: #fff5f5; }
+  .timer.done { color: #777; border-color: #aaa; }
+
+  .btn {
+    display: inline-block;
+    background: var(--navy);
+    color: #fff;
+    border: 0;
+    border-radius: 2px;
+    padding: 8px 14px;
+    font-size: 14px;
+    font-family: inherit;
+    cursor: pointer;
+    margin-top: 14px;
+  }
+  .btn:hover { background: var(--navy-dark); }
+  .btn:disabled { background: #8d97a8; cursor: default; }
+  .btn.secondary { background: #fff; color: var(--navy); border: 1px solid var(--navy); }
+  .btn.secondary:hover { background: #eef2f8; }
+
+  /* ---------- Essay ---------- */
+  h1 {
+    color: var(--navy);
+    font-weight: normal;
+    font-size: 30px;
+    margin: 22px 0 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--navy);
+  }
+  .prompt {
+    background: var(--highlight);
+    margin: 8px 18px 0;
+    padding: 6px 10px;
+    font-size: 16px;
+    line-height: 1.4;
+  }
+  .editor { margin: 8px 24px 0; }
+  textarea {
+    display: block;
+    width: 100%;
+    height: 400px;
+    resize: vertical;
+    padding: 10px;
+    border: 1px solid #ccc;
+    font-family: inherit;
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--text);
+  }
+  textarea:focus { outline: 2px solid #9db6dd; outline-offset: -1px; }
+  textarea:disabled { background: #fafafa; color: #555; }
+
+  .counter {
+    color: var(--red);
+    font-weight: bold;
+    font-style: italic;
+    font-size: 13px;
+    margin-top: 10px;
+  }
+  .counter.ok { color: #2a7a2a; }
+
+  /* ---------- Start / result screens ---------- */
+  .intro h2, .result h2 { color: var(--navy); font-weight: normal; margin: 0 0 12px; }
+  .intro p, .intro li { line-height: 1.55; }
+  .intro ul { padding-left: 20px; }
+
+  .result {
+    margin: 16px 24px 0;
+    padding: 14px 16px;
+    border: 1px solid var(--panel-border);
+    background: #f7f9fc;
+  }
+  .result h2 { font-size: 20px; }
+  .stats { display: flex; flex-wrap: wrap; gap: 8px 28px; font-size: 15px; }
+  .stats b { color: var(--navy); }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+
+  [hidden] { display: none !important; }
+
+  /* ---------- Mobile ---------- */
+  @media (max-width: 640px) {
+    html, body { background: #fff; }
+    .page {
+      margin: 0;
+      border: 0;
+      padding: 12px 12px calc(20px + env(safe-area-inset-bottom));
+    }
+    .progress-body {
+      grid-template-columns: 1fr 1fr;
+      grid-template-areas:
+        "timer timer"
+        "start end";
+    }
+    .timer { grid-area: timer; min-height: 70px; font-size: 26px; }
+    .side.start { grid-area: start; }
+    .side.end { grid-area: end; }
+    .side.end .btn { width: 100%; margin-top: 8px; }
+    h1 { font-size: 24px; margin-top: 16px; }
+    .prompt { margin: 8px 0 0; }
+    .editor { margin: 8px 0 0; }
+    textarea { height: 50vh; min-height: 260px; }
+    .result { margin: 14px 0 0; }
+    .actions .btn { flex: 1 1 auto; }
+  }
+</style>
+</head>
+<body>
+<main class="page">
+
+  <!-- Start screen -->
+  <section id="intro" class="intro">
+    <h2>FLEX Essay Trainer</h2>
+    <p>Тренажёр для написания эссе на время в формате FLEX Round 1.</p>
+    <ul>
+      <li>Тема выбирается случайно (без повторов, пока не пройдёшь все).</li>
+      <li>На эссе — <b>15 минут</b>. Когда время выйдет, поле заблокируется.</li>
+      <li>Минимум <b>250</b>, максимум <b>1500</b> символов (пробелы считаются).</li>
+    </ul>
+    <button id="startBtn" class="btn">Start Essay</button>
+  </section>
+
+  <!-- Test screen -->
+  <section id="test" hidden>
+    <div class="progress">
+      <div class="progress-head">Timed Section Progress</div>
+      <div class="progress-body">
+        <div class="side start">
+          <div class="label">Started</div>
+          <div class="value" id="startedAt"></div>
+        </div>
+        <div class="timer" id="timer" role="timer" aria-live="off">15m 0s</div>
+        <div class="side end">
+          <div class="label">Ending</div>
+          <div class="value" id="endingAt"></div>
+          <button id="endBtn" class="btn">End Timer</button>
+        </div>
+      </div>
+    </div>
+
+    <h1>Essay No. <span id="essayNo">1</span></h1>
+    <div class="prompt" id="prompt"></div>
+
+    <div class="editor">
+      <textarea id="essay" maxlength="1500" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="sentences" aria-label="Essay"></textarea>
+      <div class="counter" id="counter"></div>
+    </div>
+
+    <div class="result" id="result" hidden>
+      <h2 id="resultTitle">Time is up</h2>
+      <div class="stats">
+        <div>Characters: <b id="resChars">0</b></div>
+        <div>Words: <b id="resWords">0</b></div>
+        <div>Time used: <b id="resTime">0m 0s</b></div>
+        <div>Status: <b id="resStatus"></b></div>
+      </div>
+      <div class="actions">
+        <button id="nextBtn" class="btn">Next Topic</button>
+        <button id="copyBtn" class="btn secondary">Copy Essay</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+  const TOPICS = [
+    // Personal Growth & Adaptability
+    "Describe an experience that helped you become more independent.",
+    "Write about a time you had to adapt quickly to a new situation.",
+    "Tell about a personal achievement you are proud of and why.",
+    "Describe a mistake you made and what you learned from it.",
+    "Write about a time when you had to solve a problem creatively.",
+    // Overcoming Challenges
+    "Share a story about a challenge you faced and how you overcame it.",
+    "Describe a time when you failed at something. What did you do afterward?",
+    "Write about a difficult decision you had to make.",
+    "Share a situation where things didn't go as planned. How did you react?",
+    "Describe a time when you felt nervous or afraid but acted anyway.",
+    // Leadership & Responsibility
+    "Tell about a time when you took responsibility for something important.",
+    "Write about a situation when others relied on you.",
+    "Describe an experience where you showed leadership.",
+    "Share a time when you helped organize or improve something.",
+    "Write about an activity where you contributed to your school or community.",
+    // Cultural Understanding & Communication
+    "Describe an experience where you interacted with someone very different from you.",
+    "Share a story about a misunderstanding you had and how you solved it.",
+    "Write about how you explain your culture to people from other countries.",
+    "Tell about a time you worked in a team with people who had different opinions.",
+    "How do you plan to share your country's traditions with your American host family?",
+    // Motivation & Future Goals
+    "Why do you want to be a FLEX exchange student?",
+    "What do you hope to gain from living in the United States?",
+    "Describe how you will use your FLEX experience after returning home.",
+    "What personal qualities make you a good candidate for FLEX?",
+    "How will you represent your country as a student in the U.S.?",
+    // Character & Values
+    "Write about a time when you helped someone in need.",
+    "Tell about a situation when honesty was very important.",
+    "Share a story that shows your determination.",
+    "Describe a time when you stood up for what you believed was right.",
+    "Write about a person who has inspired you and why.",
+    // Real past topics
+    "Describe two of your personal strengths that will help you be successful on the exchange program. How have they helped you in the past few years?",
+    "Describe a time when something turned out differently than you expected. How did you react? What did you learn?",
+    "Describe a time in the past 2-3 years when you worked to improve something about yourself. Why did you want to improve it? What did you do?",
+    "What skill have you gained, and how do you think it will help you in the USA?",
+    "Describe a challenge you faced outside of school in the past year. How did you manage it?",
+    "Describe a challenge you faced at school or anywhere else. How did you deal with it?"
+  ];
+
+  const DURATION_MS = 15 * 60 * 1000;
+  const WARNING_MS = 60 * 1000;
+  const MIN_CHARS = 250;
+  const MAX_CHARS = 1500;
+
+  const $ = (id) => document.getElementById(id);
+  const els = {
+    intro: $("intro"), test: $("test"), startBtn: $("startBtn"), endBtn: $("endBtn"),
+    timer: $("timer"), startedAt: $("startedAt"), endingAt: $("endingAt"),
+    essayNo: $("essayNo"), prompt: $("prompt"), essay: $("essay"), counter: $("counter"),
+    result: $("result"), resultTitle: $("resultTitle"), resChars: $("resChars"),
+    resWords: $("resWords"), resTime: $("resTime"), resStatus: $("resStatus"),
+    nextBtn: $("nextBtn"), copyBtn: $("copyBtn")
+  };
+
+  let startTime = 0;
+  let endTime = 0;
+  let tickId = null;
+  let running = false;
+
+  // Shuffle-bag so topics don't repeat until every one has been used
+  function nextTopicIndex() {
+    let bag = [];
+    try { bag = JSON.parse(localStorage.getItem("flexTopicBag")) || []; } catch (e) {}
+    bag = bag.filter((i) => Number.isInteger(i) && i >= 0 && i < TOPICS.length);
+    if (bag.length === 0) {
+      bag = TOPICS.map((_, i) => i);
+      for (let i = bag.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [bag[i], bag[j]] = [bag[j], bag[i]];
+      }
+    }
+    const idx = bag.pop();
+    localStorage.setItem("flexTopicBag", JSON.stringify(bag));
+    return idx;
+  }
+
+  function nextEssayNo() {
+    const n = (parseInt(localStorage.getItem("flexEssayNo"), 10) || 0) + 1;
+    localStorage.setItem("flexEssayNo", String(n));
+    return n;
+  }
+
+  function formatDuration(ms) {
+    const total = Math.max(0, Math.ceil(ms / 1000));
+    return `${Math.floor(total / 60)}m ${total % 60}s`;
+  }
+
+  function formatClock(ts) {
+    return new Date(ts).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit" });
+  }
+
+  function updateCounter() {
+    let text = els.essay.value;
+    if (text.length > MAX_CHARS) {
+      text = text.slice(0, MAX_CHARS);
+      els.essay.value = text;
+    }
+    const n = text.length;
+    els.counter.textContent =
+      `${n} characters counted. Minimum of ${MIN_CHARS} characters required. Maximum of ${MAX_CHARS} characters allowed.`;
+    els.counter.classList.toggle("ok", n >= MIN_CHARS);
+  }
+
+  function tick() {
+    const left = endTime - Date.now();
+    els.timer.textContent = formatDuration(left);
+    els.timer.classList.toggle("warning", left <= WARNING_MS);
+    if (left <= 0) finish(true);
+  }
+
+  function start() {
+    const idx = nextTopicIndex();
+    els.essayNo.textContent = nextEssayNo();
+    els.prompt.textContent = TOPICS[idx];
+
+    startTime = Date.now();
+    endTime = startTime + DURATION_MS;
+    els.startedAt.textContent = formatClock(startTime);
+    els.endingAt.textContent = formatClock(endTime);
+
+    els.essay.value = "";
+    els.essay.disabled = false;
+    els.endBtn.disabled = false;
+    els.timer.classList.remove("warning", "done");
+    els.result.hidden = true;
+    updateCounter();
+
+    els.intro.hidden = true;
+    els.test.hidden = false;
+    running = true;
+    tick();
+    clearInterval(tickId);
+    tickId = setInterval(tick, 250);
+    els.essay.focus();
+    window.scrollTo(0, 0);
+  }
+
+  function finish(timeUp) {
+    if (!running) return;
+    running = false;
+    clearInterval(tickId);
+
+    const now = Math.min(Date.now(), endTime);
+    const text = els.essay.value;
+    const chars = text.length;
+    const words = (text.trim().match(/\S+/g) || []).length;
+
+    els.essay.disabled = true;
+    els.endBtn.disabled = true;
+    els.timer.classList.remove("warning");
+    els.timer.classList.add("done");
+    els.timer.textContent = timeUp ? "0m 0s" : formatDuration(endTime - now);
+    els.endingAt.textContent = formatClock(now);
+
+    els.resultTitle.textContent = timeUp ? "Time is up!" : "Timer ended";
+    els.resChars.textContent = `${chars} / ${MAX_CHARS}`;
+    els.resWords.textContent = words;
+    els.resTime.textContent = formatDuration(now - startTime);
+    const passed = chars >= MIN_CHARS;
+    els.resStatus.textContent = passed ? "Accepted ✓" : `Too short (min ${MIN_CHARS})`;
+    els.resStatus.style.color = passed ? "#2a7a2a" : "var(--red)";
+    els.result.hidden = false;
+    els.result.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  els.startBtn.addEventListener("click", start);
+  els.nextBtn.addEventListener("click", start);
+  els.essay.addEventListener("input", updateCounter);
+
+  els.endBtn.addEventListener("click", () => {
+    if (confirm("End the timer now? You won't be able to edit your essay.")) finish(false);
+  });
+
+  els.copyBtn.addEventListener("click", async () => {
+    const text = `${els.prompt.textContent}\n\n${els.essay.value}`;
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (e) {
+      els.essay.disabled = false;
+      els.essay.select();
+      document.execCommand("copy");
+      els.essay.disabled = true;
+    }
+    els.copyBtn.textContent = "Copied!";
+    setTimeout(() => (els.copyBtn.textContent = "Copy Essay"), 1500);
+  });
+
+  // Keep the timer correct after the phone tab was in the background
+  document.addEventListener("visibilitychange", () => { if (running && !document.hidden) tick(); });
+
+  window.addEventListener("beforeunload", (e) => {
+    if (running && els.essay.value.length > 0) { e.preventDefault(); e.returnValue = ""; }
+  });
+</script>
+</body>
+</html>
